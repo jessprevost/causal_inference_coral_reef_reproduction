@@ -1,0 +1,71 @@
+---
+title: "Coral reef causal inference analysis"
+author: "Jess Prevost"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages, include = FALSE}
+library(pacman)
+p_load(readxl, dagitty, tidyverse, rstanarm, rstan)
+```
+
+```{r read_data}
+
+# Standardised data, this was used in analysis
+SeychellesS <- read_xlsx("data/SeychellesS.xlsx") %>%
+  mutate(across(c(Region, habitat), as.factor),
+         across(c(MPA, Depth, Branching, Struccomplex, Nutrients, Herb, Macro...16), as.numeric))
+str(SeychellesS)
+summary(SeychellesS)
+any(is.na(SeychellesS))
+
+# Unstandardised data
+Seychelles <- read_xlsx("data/Seychelles.xlsx")
+
+# 2014 observational dataset for prediction
+Seychelles2014 <- read_xlsx("data/Seychelles2014.xlsx") 
+Predictions <- read_xlsx("data/Predictions.xlsx")
+
+
+```
+
+```{r DAG}
+# Test DAG-data consistency
+
+# Download DAG from dagitty.net
+DAG <- downloadGraph("dagitty.net/mbt1AvL") 
+
+# Visualise DAG
+plot(graphLayout(DAG))
+
+# View conditional independencies
+print(impliedConditionalIndependencies(DAG))
+
+# Evaluate the d-separation implications of the DAG
+
+r <- localTests(x = DAG, 
+                data = SeychellesS %>% 
+                  select(MPA, Branching, Struccomplex, Herb, Shifted, Depth, Nutrients, Macro...16, Wave) %>%
+                  rename(Nutrient = Nutrients, 
+                         Macro = Macro...16)
+                )
+r
+
+# Perform Holm-Bonferroni correction to p-values
+r$p.value <- p.adjust(r$p.value)
+r
+# p-values all 1 indicate DAG-data consistency 
+
+```
+```{r bayesian_models}
+
+
+```
+
+
+
