@@ -11,10 +11,11 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ```{r packages, include = FALSE}
 library(pacman)
-p_load(readxl, dagitty, tidyverse, rstanarm, rstan)
+p_load(readxl, dagitty, tidyverse, rstanarm, rstan, rethinking)
 
-devtools::install_github("rmcelreath/rethinking")
-
+# Install cmdstanr and rethinking
+# install.packages(c("coda","mvtnorm","devtools","loo","dagitty","shape"))
+# devtools::install_github("rmcelreath/rethinking")
 ```
 
 ```{r read_data}
@@ -65,9 +66,235 @@ r
 # p-values all 1 indicate DAG-data consistency 
 
 ```
+```{r logistic_regression}
+# First fit logistic regression models just to check 
+summary(SeychellesS)
+glm1 <- glm(Shifted ~ MPA, data = SeychellesS)
+summary(glm1)
+```
+
+
 ```{r bayesian_models}
+# Use ulam with cmdstan rather than map2stan
+
+# Shifted ~ bernoulli(p)
+
+#--------------------------------
+## MPA model: 
+# logit(p) = beta0 + beta1 * MPA
+
+MPA_mod <- ulam(
+  flist = # flist contains the formulas that define the likelihood and priors
+    alist(Shifted ~ dbinom(1, p), # shifted has bernoulli distribution
+          logit(p) <- beta0 + beta1 * MPA, # logistic model
+          beta0 ~ dcauchy(0, 10), # priors on beta0
+          beta1 ~ dstudent(4, 0, 2.5) # priors on beta1
+    ), 
+  data = SeychellesS %>% select(Shifted, MPA), 
+  cmdstan = TRUE)
+
+precis(MPA_mod) # summary statistics for posteriors
+plot(MPA_mod) # visual representations of summary statistics
+rethinking::traceplot(MPA_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(MPA_mod)
+post_MPA <- post$beta1
+PI(post_MPA, prob = 0.90)
+PI(post_MPA, prob = 0.50) 
+median(post_MPA) 
+str(SeychellesS)
+
+#--------------------------------
+## Nutrient model: 
+# logit(p) = beta0 + beta1 * Nutrients + beta2 * Depth
+
+nutrient_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Nutrients + beta2 * Depth,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5),
+          beta2 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Nutrients, Depth), 
+  cmdstan = TRUE)
+
+precis(nutrient_mod) # summary statistics for posteriors
+plot(nutrient_mod) # visual representations of summary statistics
+rethinking::traceplot(nutrient_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(nutrient_mod)
+post_nutrient <- post$beta1
+PI(post_nutrient, prob = 0.90)
+PI(post_nutrient, prob = 0.50) 
+median(post_nutrient) 
+
+#--------------------------------
+## Herbivore biomass model:
+# logit(p) = beta0 + beta1 * Herb + beta2 * MPA + beta3 * Struccomplex
+
+herb_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Herb + beta2 * MPA + beta3 * Struccomplex ,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5),
+          beta2 ~ dstudent(4, 0, 2.5),
+          beta3 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Herb, MPA, Struccomplex), 
+  cmdstan = TRUE)
+
+precis(herb_mod) # summary statistics for posteriors
+plot(herb_mod) # visual representations of summary statistics
+rethinking::traceplot(herb_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(herb_mod)
+post_herb <- post$beta1
+PI(post_herb, prob = 0.90)
+PI(post_herb, prob = 0.50) 
+median(post_herb) 
 
 
+#--------------------------------
+## Branching coral model:
+# logit(p) = beta0 + beta1 * Branching + beta2 * MPA + beta3 * Depth + beta4 * Wave
+
+branching_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Branching + beta2 * MPA + beta3 * Depth + beta4 * Wave,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5),
+          beta2 ~ dstudent(4, 0, 2.5),
+          beta3 ~ dstudent(4, 0, 2.5),
+          beta4 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Branching, MPA, Depth, Wave), 
+  cmdstan = TRUE)
+
+precis(branching_mod) # summary statistics for posteriors
+plot(branching_mod) # visual representations of summary statistics
+rethinking::traceplot(branching_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(branching_mod)
+post_branching <- post$beta1
+PI(post_branching, prob = 0.90)
+PI(post_branching, prob = 0.50) 
+median(post_branching) 
+
+#--------------------------------
+## Depth model:
+# logit(p) = beta0 + beta1 * Depth
+
+depth_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Depth,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Depth), 
+  cmdstan = TRUE)
+
+precis(depth_mod) # summary statistics for posteriors
+plot(depth_mod) # visual representations of summary statistics
+rethinking::traceplot(depth_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(depth_mod)
+post_depth <- post$beta1
+PI(post_depth, prob = 0.90)
+PI(post_depth, prob = 0.50) 
+median(post_depth) 
+
+#--------------------------------
+## Structural complexity model:
+# logit(p) = beta0 + beta1 * Struccomplex + beta2 * Branching
+
+complexity_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Struccomplex + beta2 * Branching,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5),
+          beta2 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Struccomplex, Branching), 
+  cmdstan = TRUE)
+
+precis(complexity_mod) # summary statistics for posteriors
+plot(complexity_mod) # visual representations of summary statistics
+rethinking::traceplot(complexity_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(complexity_mod)
+post_complexity <- post$beta1
+PI(post_complexity, prob = 0.90)
+PI(post_complexity, prob = 0.50) 
+median(post_complexity) 
+
+#--------------------------------
+## Wave model:
+# logit(p) = beta0 + beta1 * Wave
+
+wave_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Wave,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Wave), 
+  cmdstan = TRUE)
+
+precis(wave_mod) # summary statistics for posteriors
+plot(wave_mod) # visual representations of summary statistics
+rethinking::traceplot(wave_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(wave_mod)
+post_wave <- post$beta1
+PI(post_wave, prob = 0.90)
+PI(post_wave, prob = 0.50) 
+median(post_wave) 
+
+#--------------------------------
+## Initial macroalgae biomass model:
+# logit(p) = beta0 + beta1 * Macro...16 + beta2 * Herb + beta3 * Depth + beta4 * Nutrients + beta5 * Wave
+
+macro_mod <- ulam(
+  flist = 
+    alist(Shifted ~ dbinom(1, p),
+          logit(p) <- beta0 + beta1 * Macro...16 + beta2 * Herb + beta3 * Depth + beta4 * Nutrients + beta5 * Wave,
+          beta0 ~ dcauchy(0, 10),
+          beta1 ~ dstudent(4, 0, 2.5),
+          beta2 ~ dstudent(4, 0, 2.5),
+          beta3 ~ dstudent(4, 0, 2.5),
+          beta4 ~ dstudent(4, 0, 2.5),
+          beta5 ~ dstudent(4, 0, 2.5)
+    ), 
+  data = SeychellesS %>% select(Shifted, Macro...16, Herb, Depth, Nutrients, Wave), 
+  cmdstan = TRUE)
+
+precis(macro_mod) # summary statistics for posteriors
+plot(macro_mod) # visual representations of summary statistics
+rethinking::traceplot(macro_mod) # traceplots
+
+# show median and 90% and 50% percentile interval (PI) for depth  
+post <- extract.samples(macro_mod)
+post_macro <- post$beta1
+PI(post_macro, prob = 0.90)
+PI(post_macro, prob = 0.50) 
+median(post_macro) 
+
+#--------------------------------
+
+# note error in branching coral model specification in paper - b3 repeated instead of having b4 and initial macroalgae model specification in paper - b3 repeated instead of having b4, so no b5
 ```
 
 
