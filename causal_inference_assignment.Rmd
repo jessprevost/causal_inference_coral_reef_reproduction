@@ -12,6 +12,9 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```{r packages, include = FALSE}
 library(pacman)
 p_load(readxl, dagitty, tidyverse, rstanarm, rstan)
+
+devtools::install_github("rmcelreath/rethinking")
+
 ```
 
 ```{r read_data}
