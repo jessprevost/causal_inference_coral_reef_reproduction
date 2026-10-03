@@ -1,13 +1,83 @@
 ---
-title: "Coral reef causal inference analysis"
+title: "Coral reef causal inference review"
 author: "Jess Prevost"
 date: "`r Sys.Date()`"
+bibliography: causal_inf_citations.bib
 output: pdf_document
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
+
+# Review
+
+### Overarching question - are their scientific conclusions justified by their data and analysis?
+
+### How well defined is the causal question?
+
+The causal question is well defined in the abstract, revisited in the text and fairly specific:
+How did specific key variables causally affect the recovery trajectories of coral reefs in the Seychelles following bleaching events in 1998 
+
+Some detail in the variables missing but available in [@graham_2015]
+The alternative recovery trajectories of coral reefs were defined as recovering or regime shifting as per @graham_2015. Recovering reefs had coral cover greater than macroalgal coverage and time series data showed high or increasing coral cover while regime shifting reefs showed macroalgae dominance greater than coral cover and macroalgal cover remained high or increased over time [@graham_2015]. Four metrics were used to define recovery trajectories with the full methodology described in @graham_2015.
+The year of data collection was stated as 1994 for the branching coral, macroalgal cover, herbivorous fish biomass, and structural complexity  (predisturbance) but other variables not stated but can be found in [@graham_2015]: 
+nutrient measurements were collected in 2014 according to @graham_2015 but 2004 according to @arif_2022 discrepancy! If this data was from 2004, the source is not cited or data collection described. The 2014 data @graham_2015 is not available so can't check. Same values for nutrients in prediction dataset and causal model dataset reflect it may in fact be 2014 data.
+wave action calculated from 1998 to 2011 - 6 years post bleaching?? how can you then have causal arrow from nutrients to initial macroalgae and to regime shift?? 
+depth calculation date not important
+MPA - binary variable? not stated 
+
+Since causal inference is the prediction of intervention, the causal question is predicting whether changes in any of the given variables would change the recovery trajectory of a reef
+
+The specification of the causal model as a DAG was good, using domain knowledge and extensive research. Each causal relationship in the DAG was detailed in the supplementary text explaining why each of the causal relationships were included. No potentially unobserved variables included. There is a risk of using only variables which are available/ have been collected.  
+Potential for branching coral to cause MPA selection (higher preservation of diversity).
+
+DAG-data consistency was tested for using the d-separation method [@pearl_2009]. All d-separation conditions implied by DAG were consistent with the data.
+
+There was discrepancy between the DAG downloaded from dagitty.net in the supplied code and the DAG stated in the paper [@arif_2022]. The downloaded DAG contained a directed edge from depth to initial macroalgae cover and excluded the directed edge from wave exposure to branching coral unlike the DAG in the paper. Nonetheless, the causal relationships described in the supplementary information and the d-separation conditions examined were associated with the DAG in the paper. After checks it was found that the data were in fact consistent with the d-separation conditions implied by both DAGs. However, this does raise the question of whether the final causal model stated in the paper was the first to be proposed or whether alternative DAGs, such as the one in the supplied code, were tested. The authors recognise that multiple DAGs can pass DAG-data consistency, and that the final DAG should be justified with theory but do not outline their consideration of alternative DAGs. Ideally, a consideration of alternative DAGs and explanation of why the final causal model was chosen should have been included, especially since the data were consistent with both of these DAGs. 
+
+
+### The causal adjustment strategy
+The authors used the back-door criterion to define an adjustment set for each variable in order to estimate the total causal effect of the given variable on the recovery trajectory of coral reefs. This is an established method for calculating sets of variables to adjust for to give an unbiased estimate of the total causal effect of one variable on another [@pearl_2009]. 
+All the models specified in the paper satisfy the back-door criterion for the DAG used in the paper. The model specifications for some of the variables would change if the DAG in the supplied code were used instead (such as branching coral). For the majority of variables including MPA, depth, wave exposure, nutrients, branching, structural complexity, and herbivore biomass, the minimal adjustment set was used for the model specifications, meaning the set containing the fewest variables which satisfies the back-door criterion. However, for the initial macroalgae model, depth was included as a covariate even though the minimal adjustment set does not include this variable. The adjustment set still satisfies the back-door criterion with depth included, it is just not the minimal adjustment set. The inclusion of depth might be as a result of the use of the DAG in the supplied code prior to the final DAG included in the paper. The supplementary text hints at this with the inclusion of paths 5 and 6 which do not exist in the DAG in the paper but do exist in the DAG in the supplied code. The directed edge from depth to initial macroalgae opens additional backdoor paths which should be adjusted for by including depth when using the DAG in the supplied code. Reasons for the decision to use the minimal adjustment sets for the other variables and not to use the minimal adjustment set for the initial macroalgae model should have been explicitly stated. While all adjustment sets which satisfy the back-door criterion give unbiased estimates of the total causal effect but they can differ in precision of the estimates depending on the additional variables included [@pearl_2009]. 
+
+There were additional errors in the supplementary information for this section (S1.3). The initial macroalgae model had an incomplete path (path 4) listed, although this did not affect the adjustment set. The model specified in the paper for herbivore biomass which adjusts for structural complexity and MPA is the minimial set satisfying the backdoor criterion. However, the supplementary text description has an error stating that structural complexity and branching coral should be adjusted for. This is incorrect as this is insufficient as an adjustment set since branching coral is a collider and opens another backdoor path (Herbivore biomass <- MPA -> Branching coral <- Depth -> Regime Shift) thus MPA or Depth would still additionally need to be included in the set to block this newly opened path. 
+
+
+
+
+
+### Bayesian analysis
+
+### potential limitations of the study, reported or otherwise
+data collection biases
+
+the measurements in the causal model were taken in 1994 for some of the variables which is 2 years prior to the bleaching event - could have changed in this time period
+
+other causes - substrate type? also check @graham_2015
+
+In predictive model, was updated macroalgal cover considered (could some reefs that recovered be weaker than others due to previous bleachings)
+
+For predictive model, different rates of recovery after other bleaching events could be a new cause
+
+
+
+
+### any other aspects that you think are important for causal inference
+
+Question the change in causal model - it seems to be retrospective as the code and some details in the supplementary info were not changed - why was this the case? were the estimates better? was it during review?
+
+
+Additional errors
+Poor metadata for data for @arif_2022
+
+Grammatical/typesetting issues
+Main paper
+Few errors in beta numbers in statistical model specifications (branching coral model, inital macroalgae model)
+Supplementary text 
+Missing a heading for branching coral model specification in S1.3
+
+# Reproduction
 
 ```{r packages, include = FALSE}
 library(pacman)
@@ -20,7 +90,7 @@ p_load(readxl, dagitty, tidyverse, rstanarm, rstan, rethinking)
 
 ```{r read_data}
 
-# Standardised data, this was used in analysis
+# Standardised data - this was used in analysis
 SeychellesS <- read_xlsx("data/SeychellesS.xlsx") %>%
   mutate(across(c(Region, habitat), as.factor),
          across(c(MPA, Depth, Branching, Struccomplex, Nutrients, Herb, Macro...16), as.numeric))
@@ -49,15 +119,12 @@ plot(graphLayout(DAG))
 
 # View conditional independencies
 print(impliedConditionalIndependencies(DAG))
+length(impliedConditionalIndependencies(DAG))
 
 # Evaluate the d-separation implications of the DAG
-
-r <- localTests(x = DAG, 
-                data = SeychellesS %>% 
+r <- localTests(x = DAG, data = SeychellesS %>% 
                   select(MPA, Branching, Struccomplex, Herb, Shifted, Depth, Nutrients, Macro...16, Wave) %>%
-                  rename(Nutrient = Nutrients, 
-                         Macro = Macro...16)
-                )
+                  rename(Nutrient = Nutrients, Macro = Macro...16))
 r
 
 # Perform Holm-Bonferroni correction to p-values
@@ -65,7 +132,78 @@ r$p.value <- p.adjust(r$p.value)
 r
 # p-values all 1 indicate DAG-data consistency 
 
+# View valid adjustment sets when using the backdoor criterion (i.e. effect = "total")
+adjustmentSets(DAG, exposure = "MPA", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Nutrient", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Herb", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Herb", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Branching", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Depth", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Struccomplex", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Wave", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Macro", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Macro", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG, exposure = "Macro", outcome = "Shifted", effect = "total") 
+
+### DAG in paper
+DAG2 <- dagitty('dag {
+bb="0,0,1,1"
+Branching -> Shifted
+Branching -> Struccomplex
+Depth -> Branching
+Depth -> Nutrient
+Depth -> Shifted
+Herb -> Macro
+Herb -> Shifted
+MPA -> Branching
+MPA -> Herb
+Macro -> Shifted
+Nutrient -> Macro
+Nutrient -> Shifted
+Struccomplex -> Herb
+Struccomplex -> Shifted
+Wave -> Branching
+Wave -> Macro
+Wave -> Shifted
+}')
+
+# Visualise DAG
+plot(graphLayout(DAG2))
+
+# View conditional independencies
+print(impliedConditionalIndependencies(DAG2))
+length(impliedConditionalIndependencies(DAG2))
+
+# Evaluate the d-separation implications of the DAG
+r2 <- localTests(x = DAG2, 
+                data = SeychellesS %>% 
+                  select(MPA, Branching, Struccomplex, Herb, Shifted, Depth, Nutrients, Macro...16, Wave) %>%
+                  rename(Nutrient = Nutrients, 
+                         Macro = Macro...16)
+                )
+r2
+
+# Perform Holm-Bonferroni correction to p-values
+r2$p.value <- p.adjust(r2$p.value)
+r2
+# p-values all 1 indicate DAG-data consistency 
+
+# View total adjustment sets
+adjustmentSets(DAG2, exposure = "MPA", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Nutrient", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Herb", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Branching", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Depth", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Struccomplex", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Wave", outcome = "Shifted", effect = "total") 
+adjustmentSets(DAG2, exposure = "Macro", outcome = "Shifted", effect = "total") 
+
+adjustmentSets(DAG2, exposure = "Nutrient", outcome = "Shifted", effect = "total", type = "all") 
+adjustmentSets(DAG2, exposure = "Herb", outcome = "Shifted", effect = "total", type = "all") 
+adjustmentSets(DAG2, exposure = "Macro", outcome = "Shifted", effect = "total", type = "all") 
+
 ```
+
 ```{r logistic_regression}
 # First fit logistic regression models just to check 
 summary(SeychellesS)

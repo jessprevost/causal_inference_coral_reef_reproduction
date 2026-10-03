@@ -1,15 +1,15 @@
 # Install and required packages 
 # Note that the rethinking package requires the installation of RStan, with instructions varying depending on the computer used. Detailed instructions for download can be found here: https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started 
 
-install.packages(“rethinking”) 
+install.packages("rethinking") 
 library(rethinking) 
-install.packages(“rstanarm”)
+install.packages("rstanarm")
 library(rstanarm)
-install.packages(“ggeffects”)
+install.packages("ggeffects")
 library(ggeffects)
-install.packages(“ggplot2”)
+install.packages("ggplot2")
 library(ggplot2)
-install.packages(“dagitty”)
+install.packages("dagitty")
 library(dagitty)
 
 # Test DAG-data consistency (see Supplementary Material for detail) 
