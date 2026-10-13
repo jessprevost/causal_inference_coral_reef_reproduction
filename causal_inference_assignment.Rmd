@@ -3,7 +3,8 @@ title: "Coral reef causal inference review"
 author: "Jess Prevost"
 date: "`r Sys.Date()`"
 bibliography: causal_inf_citations.bib
-output: pdf_document
+output:
+  bookdown::pdf_document2
 ---
 
 ```{r setup, include = FALSE}
@@ -19,6 +20,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 The main causal question is outlined in the abstract and revisited throughout the text. The question is defined as how did specific key variables causally affect the recovery trajectories of coral reefs in the Seychelles following bleaching events in 1998 [@graham_2015]. Since causal inference is the prediction of intervention [@pearl_2009], the causal question is predicting whether changes in any of the key variables would change the recovery trajectory of a reef. The question is fairly specific indicating that the results apply only to these reefs in the Seychelles and this specific bleaching event. They do not generalise to different areas although the authors do use the defined causal model, to predict the recovery trajectory of the same reefs which had since recovered following a bleaching event in 2016. 
 
 Some detail in the variables were omitted from the paper but these were mostly available in the research by @graham_2015. The alternative recovery trajectories of coral reefs were defined as recovering or regime shifting as per @graham_2015. Recovering reefs had coral cover greater than macroalgal coverage and time series data showed high or increasing coral cover while regime shifting reefs showed macroalgae dominance greater than coral cover and macroalgal cover remained high or increased over time [@graham_2015]. Four metrics were used to define recovery trajectories with the full methodology described in @graham_2015. The year of data collection was stated as 1994 for branching coral, macroalgal cover, herbivorous fish biomass, and structural complexity to account for these variables prior to bleaching and the other variables collection dates were not stated but can be found in [@graham_2015].
+
 There was however a discrepancy relating the the data collection for the nutrient measurements. @arif_2022 stated that these data were from 2004 and suggested @graham_2015 as the source of the data but according to @graham_2015 nutrient measurements were collected in 2014. This may have been a typographical error since the same values for nutrients are used in the causal model dataset and prediction dataset and it is stated that the predictive model uses data from 2014. The 2014 data from @graham_2015 is unfortunately unavailable thus it cannot be cross-checked. If this is not a typographical error, the source of the nutrient data should have been cited or data collection described. Either way, the nutrient measurements were taken after the bleaching event occurred. Nutrient content is expected to change over seasons but differences in sites are anticipated to remain stable [@graham_2015]. Nevertheless, there is the possibility for the post-bleaching macroalgal content to affect nutrient levels which would be an issue for inference from measurements taken pre-bleaching. Depth, MPA, and wave exposure data were expected to remain stable over time thus even though depth was measured and wave exposure was calculated post-bleaching (1998 - 2011), this should not be an issue for inference as macroalgae content post-bleaching should not affect depth, MPA, or wave exposure. 
 
 The specification of the causal model as a DAG was good, using domain knowledge and extensive research. Each causal relationship in the DAG was detailed in the supplementary text explaining why each of the causal relationships were included. No potentially unobserved variables included. There is a risk of using only variables which are available/ have been collected.  
@@ -56,7 +58,6 @@ In predictive model, was updated macroalgal cover considered (could some reefs t
 
 For predictive model, different rates of recovery after other bleaching events could be a new cause
 
-
 rightly interpretted only the effect size of the predicotr variable of interest
 
 ### any other aspects that you think are important for causal inference
@@ -72,28 +73,29 @@ Few errors in beta numbers in statistical model specifications in paper and supp
 Supplementary text 
 Missing a heading for branching coral model specification in S1.3
 
-Having the code and data definitely makes the analysis more reproducible 
+Having the code and data definitely makes the analysis more reproducible but code is not fully executable with out lots of editing
+
+Factors which "directly influence(d) the response based on (the) previous DAG-based analysis" were included in the predictive model (rightly - look up Markov blanket)
 
 # Reproduction
 In order to reproduce the analysis by @arif_2022, I obtained the data and R code supplied from Figshare [@arif_2021] and modified the code in R to attempt to reproduce the results [@R]. (As alluded to above, the metadata for the supplied data was poor with no description for any of the four datasets nor the variables within them other than what could be drawn from the paper, the supplementary data, and the code.) I read in the four datasets and checked for missing values.
 
-I did not reproduce the creation of the DAG as this requires extensive knowledge about coral reef systems, and the reasons for the directed relationships within the DAG are outlined well in the supplementary text. After reading in the DAG from dagitty.web using the *dagitty* package [@dagitty], I noted that the DAG in the code differed from that in the paper as previously mentioned. Thus, I modified the DAG layout code to reflect the DAG in the paper. I confirmed that there were 32 DAG-implied independencies, cross-checked them against those listed in the supplementary data, and confirmed that the observed data were consistent with the independencies (p = 1) after performing Holm-Bonferroni correction to p-values to account for multiple testing. To assess the selection of covariates in the models for each variable, I drew the DAG and used the backdoor criterion to determine which variables to adjust for. I also made use of the adjustmentSets function to determine the minimal adjustment set for each of the variables [@dagitty]. As noted above, the minimal adjustment set was used for all variables except the initial macroalgae model. For the remainder of the analysis, I made use of the models stated in the paper since these all still satisfied the backdoor criterion. 
+I did not reproduce the creation of the DAG as this requires extensive knowledge about coral reef systems, and the reasons for the directed relationships within the DAG are outlined well in the supplementary text. After reading in the DAG from dagitty.web using the *dagitty* package [@dagitty], I noted that the DAG in the code differed from that in the paper as previously mentioned. Thus, I modified the DAG layout code to reflect the DAG in the paper (Figure \@ref(fig:DAG-fig)). I confirmed that there were 32 DAG-implied independencies, cross-checked them against those listed in the supplementary data, and confirmed that the observed data were consistent with the independencies (p = 1) after performing Holm-Bonferroni correction to p-values to account for multiple testing. To assess the selection of covariates in the models for each variable, I drew the DAG and used the backdoor criterion to determine which variables to adjust for. I also made use of the adjustmentSets function to determine the minimal adjustment set for each of the variables [@dagitty]. As noted above, the minimal adjustment set was used for all variables except the initial macroalgae model. For the remainder of the analysis, I made use of the models stated in the paper since these all still satisfied the backdoor criterion. 
 
-As in the analysis by @arif_2022, I used the *rethinking* package [@rethinking] to fit Bayesian logistic regression models for each of the variables of interest with the response being 0 for recovering sites and 1 for sites showing a shift in regime. The data were standardised by subtracting the mean of each variable and dividing by two standard deviations prior to model fitting. Weakly informative priors were used including a Cauchy(0,10) prior for the intercept terms and student_t(4,0,2.5) priors for slope coefficients as recommended by previous authors. I used three chains rather than a single chain as in @arif_2022 to assess convergence. I made use of the newer ulam tool rather than map2stan for model fitting [@rethinking]. All chains converged with Rhat < 1.03 for all parameters.
+As in the analysis by @arif_2022, I used the *rethinking* package [@rethinking] to fit Bayesian logistic regression models for each of the variables of interest with the response being 0 for recovering sites and 1 for sites showing a shift in regime. The data were standardised by subtracting the mean of each variable and dividing by two standard deviations prior to model fitting. Weakly informative priors were used including a Cauchy(0,10) prior for the intercept terms and student_t(4,0,2.5) priors for slope coefficients as recommended by previous authors. I used three chains rather than a single chain as in @arif_2022 to assess convergence. I made use of the newer ulam tool rather than map2stan for model fitting [@rethinking]. All chains converged with Rhat < 1.01 for all parameters and traceplots showing appropriate mixing.
 
-I plotted the posterior median with 90% and 50% percentile intervals (PI) and 95% highest posterior density interval (HPDI) for the causal effect of each of the variables on regime shift trajectory on the logit scale (log-odds). The paper stated that the solid lines in the plot represented the 95% HPDIs. However, the code and the actual plot indicate that PIs not HPDIs were calculated. Thus, I plotted both. It may have been better to plot effect sizes using the odd ratios on a log scale as these are more easily interpreted. 
-
+I plotted the posterior median with 90% and 50% percentile intervals (PI) for the causal effect of each of the variables on regime shift trajectory on the logit scale (log-odds). The paper stated that the solid lines in the plot represented the 95% highest posterior density intervals (HPDI). However, the code and the actual plot indicate that PIs not HPDIs were calculated so this is what was replicated (Figure \@ref(fig:fig-3)). It may have been better to plot effect sizes using the odd ratios on a log scale as these are more easily interpreted. 
 
 ```{r packages, include = FALSE}
 library(pacman)
-p_load(readxl, dagitty, tidyverse, rstanarm, rstan, rethinking, ggeffects)
+p_load(readxl, dagitty, tidyverse, rstanarm, rstan, rethinking, ggeffects, scales, patchwork, ggridges)
 
 # Install cmdstanr and rethinking
 # install.packages(c("coda","mvtnorm","devtools","loo","dagitty","shape"))
 # devtools::install_github("rmcelreath/rethinking")
 ```
 
-```{r read_data}
+```{r read_data, include = FALSE}
 
 # Standardised data - this was used in analysis
 SeychellesS <- read_xlsx("data/SeychellesS.xlsx") %>%
@@ -111,12 +113,13 @@ summary(Seychelles)
 any(is.na(Seychelles))
 
 # 2014 observational dataset for prediction
-Seychelles2014 <- read_xlsx("data/Seychelles2014.xlsx") 
+Seychelles2014 <- read_xlsx("data/Seychelles2014.xlsx") %>%
+  mutate(Wave = as.numeric(Wave)) # change from character
 Predictions <- read_xlsx("data/Predictions.xlsx")
 
 ```
 
-```{r DAG}
+```{r DAG, include = FALSE}
 # Test DAG-data consistency
 
 # Download DAG from dagitty.net
@@ -181,7 +184,7 @@ Wave -> Shifted
 )
 
 # Visualise DAG
-plot(graphLayout(DAG2))
+plot(graphLayout(DAG2)) # will plot again later
 
 # View conditional independencies
 print(impliedConditionalIndependencies(DAG2))
@@ -213,14 +216,12 @@ adjustmentSets(DAG2, exposure = "Macro", outcome = "Shifted", effect = "total", 
 
 ```
 
-```{r logistic_regression, include = F}
-# First fit logistic regression models just to check 
-summary(SeychellesS)
-glm1 <- glm(Shifted ~ MPA, data = SeychellesS)
-summary(glm1)
+```{r DAG-fig, fig.cap= "Directed acyclic graph (DAG) representing the causal structure of factors influencing regime shift versus recovery trajectories in Seychelles coral reefs. Herbivorous fish biomass, branching coral, macroalgal cover, and structural complexity represent predisturbance observational data (1994), whereas  depth, MPA status, and wave exposure data represent values that are assumed to stay stable across years. There are some ambiguities regarding the year of collection of the nutrient data."}
+# Visualise DAG
+plot(graphLayout(DAG2))
 ```
 
-```{r bayesian_models}
+```{r bayesian_models, include = FALSE}
 # Use ulam with cmdstan rather than map2stan
 
 # Set seed for reproducibility
@@ -241,7 +242,10 @@ MPA_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, MPA), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(MPA_mod) # summary statistics for posteriors
 plot(MPA_mod) # visual representations of summary statistics
@@ -270,7 +274,10 @@ nutrient_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Nutrients, Depth), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(nutrient_mod) # summary statistics for posteriors
 plot(nutrient_mod) # visual representations of summary statistics
@@ -299,7 +306,10 @@ herb_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Herb, MPA, Struccomplex), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(herb_mod) # summary statistics for posteriors
 plot(herb_mod) # visual representations of summary statistics
@@ -330,7 +340,10 @@ branching_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Branching, MPA, Depth, Wave), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(branching_mod) # summary statistics for posteriors
 plot(branching_mod) # visual representations of summary statistics
@@ -357,7 +370,10 @@ depth_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Depth), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(depth_mod) # summary statistics for posteriors
 plot(depth_mod) # visual representations of summary statistics
@@ -385,7 +401,10 @@ complexity_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Struccomplex, Branching), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(complexity_mod) # summary statistics for posteriors
 plot(complexity_mod) # visual representations of summary statistics
@@ -412,7 +431,10 @@ wave_mod <- ulam(
     ), 
   data = SeychellesS %>% select(Shifted, Wave), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(wave_mod) # summary statistics for posteriors
 plot(wave_mod) # visual representations of summary statistics
@@ -444,7 +466,10 @@ macro_mod <- ulam(
   data = SeychellesS %>% select(Shifted, Macro...16, Herb, Depth, Nutrients, Wave) %>%
   rename(Macro = Macro...16), 
   chains = 3,
-  cmdstan = TRUE)
+  cmdstan = TRUE,
+  messages = FALSE, 
+  refresh = 0,
+  show_messages = FALSE)
 
 precis(macro_mod) # summary statistics for posteriors
 plot(macro_mod) # visual representations of summary statistics
@@ -460,9 +485,9 @@ med_macro <- median(post_macro)
 
 ```
 
-```{r fig_3A}
-# Use median and 50% and 90% PI values from above models to create Manuscript Figure 3a. 
+```{r posterior_causal_plots, include = FALSE}
 
+# Use median and 50% and 90% PI values from above models to create Manuscript Figure 3a. 
 label <- c("MPA", "Carbon:Nitrogen", "Herbivore Biomass", "Branching Coral", "Depth", "Structural Complexity", "Wave Exposure", "Initial Macroalgae")
 median <- c(med_MPA, med_nutrient, med_herb, med_branching, med_depth, med_complexity, med_wave, med_macro)
 
@@ -474,110 +499,437 @@ upper50 <- c(PI50_MPA[2], PI50_nutrient[2], PI50_herb[2], PI50_branching[2], PI5
 
 df <- data.frame(label, median, lower90, upper90, lower50, upper50)
 
+# reverses the factor level ordering for labels after coord_flip()
+df$label <- factor(df$label, levels=rev(df$label))
+
+plot_causal_effects <- ggplot(data=df, aes(x=label, y=median, ymin=lower90, ymax=upper90)) +
+  geom_errorbar(aes(ymin=lower50, ymax=upper50), width =0, size = 1.3)+ # add new error bar on top of your original with the lower50 and upper50. width = 0 gets ride of the whiskers, size controls the thickness
+  geom_pointrange() + 
+  geom_hline(yintercept=0, lty=2) +  # add a dotted line at x=0 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab(" ") + ylab("Standardized Effect Size (log-odds)") +
+  theme_bw() + 
+  theme(aspect.ratio = 1) + # 1:1 aspect ratio
+  plot_annotation(tag_levels = list("(a)")) 
+
+## Now use median and 95% HPDI values from above models as stated in text but don't actually plot this
 lower95 <- c(HPDI_MPA[1], HPDI_nutrient[1], HPDI_herb[1], HPDI_branching[1], HPDI_depth[1], HPDI_complexity[1], HPDI_wave[1], HPDI_macro[1])
 upper95 <- c(HPDI_MPA[2], HPDI_nutrient[2], HPDI_herb[2], HPDI_branching[2], HPDI_depth[2], HPDI_complexity[2], HPDI_wave[2], HPDI_macro[2])
 
 df2 <- data.frame(label, median, lower95, upper95)
 
 # reverses the factor level ordering for labels after coord_flip()
-df$label <- factor(df$label, levels=rev(df$label))
-
-ggplot(data=df, aes(x=label, y=median, ymin=lower90, ymax=upper90)) +
-  geom_errorbar(aes(ymin=lower50, ymax=upper50), width =0, size = 1.3)+ # add new error bar on top of your original with the lower50 and upper50. width = 0 gets ride of the whiskers, size controls the thickness
-  geom_pointrange() + 
-  geom_hline(yintercept=0, lty=2) +  # add a dotted line at x=0 after flip
-  coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab(" ") + ylab("Standardized Effect Size (log-odds)") +
-  theme_bw()
-
-# reverses the factor level ordering for labels after coord_flip()
 df2$label <- factor(df2$label, levels=rev(df2$label))
 
-ggplot(data=df2, aes(x=label, y=median, ymin=lower95, ymax=upper95)) +
+plot_causal_effects_HPDI <- ggplot(data=df2, aes(x=label, y=median, ymin=lower95, ymax=upper95)) +
   geom_pointrange() + 
   geom_hline(yintercept=0, lty=2) +  # add a dotted line at x=0 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab(" ") + ylab("Standardized Effect Size (log-odds)") +
-  theme_bw()
+  theme_bw() + 
+  plot_annotation(tag_levels = list("(a)")) 
 
 ```
 
-```{r}
-# Plot marginal plots of continuous predictor variables as shown in Figure 3b and 4b. Use ‘Seychelles’ dataset, which has unstandardized data.
+```{r marginal_causal_plots, include = FALSE}
+## Plot marginal plots of continuous predictor variables as shown in Figure 3b and 4b. Use ‘Seychelles’ dataset, which has unstandardized data.
+# Requires fitting Bayesian glms for each response variable using MCMC
+
+# Define function for plotting
+plot_3b <- function(ggpred_obj, x_label) {
+  
+  i <- which(diff(ggpred_obj$predicted > 0.5) != 0)[1] # two predictions surrounding 0.5
+  x_50 <- approx(x = ggpred_obj$predicted[i:(i + 1)], y = ggpred_obj$x[i:(i + 1)], xout = 0.5)$y
+  
+  plot(ggpred_obj, show_data = TRUE, 
+       jitter = 0.0, dot_size = 1, line_size = 0.5, 
+       show_title = FALSE, show_y_title = FALSE) +
+    scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
+    labs(x = x_label) + 
+    theme(aspect.ratio = 1) + # 1:1 aspect ratio
+    annotate("point", x = x_50, y = 0.5, shape = 18, size = 4, colour = "steelblue") # add diamond with calculated value
+  
+}
+
+# Depth marginal plot 
+fit <- stan_glm(Shifted ~ Depth, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0)
+depth_MP <- ggpredict(fit, terms = "Depth")
+plot_depth <- plot_3b(depth_MP, "Depth (m)")
+
+# Nutrient marginal plot 
+fit <- stan_glm(Shifted ~ Nutrients + Depth, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0)
+nutrient_MP <- ggpredict(fit, terms = "Nutrients")
+plot_nutrient <- plot_3b(nutrient_MP, "Carbon : Nitrogen")
+
+# Branching coral marginal plot
+fit <- stan_glm(Shifted ~ Branching + Depth + Manage + Wave, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0) # MPA is called Manage in this dataset (wrong in supplied code)
+branching_MP <- ggpredict(fit, terms = "Branching")
+plot_branching <- plot_3b(branching_MP, "Branching Coral (% cover)")
+
+# Structural complexity marginal plot 
+fit <- stan_glm(Shifted ~ Struccomplex + Branching, data = Seychelles, family = binomial("logit"),chains = 1, refresh = 0)
+struccomplex_MP <- ggpredict(fit, terms = "Struccomplex") 
+plot_complexity <- plot_3b(struccomplex_MP, "Structural Complexity")
+
+# Wave exposure marginal plot 
+fit <- stan_glm(Shifted ~ Wave, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0)
+wave_MP <- ggpredict(fit, terms = "Wave")
+plot_wave <- plot_3b(wave_MP, "Wave Exposure")
+
+# Herbivore biomass marginal plot 
+fit <- stan_glm(Shifted ~ Herb + Struccomplex + Branching, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0)
+herb_MP <- ggpredict(fit, terms = "Herb")
+plot_herb <- plot_3b(herb_MP, "Herbivore Biomass (kg/ha)")
+
+# Initial macroalgae cover marginal plot 
+fit <- stan_glm(Shifted ~ Macro + Herb + Depth + Nutrients + Wave, data = Seychelles, family = binomial("logit"), chains = 1, refresh = 0)
+macro_MP <- ggpredict(fit, terms = "Macro") 
+plot_macro <- plot_3b(macro_MP, x_label = "Macroalgae (% cover)")
+
+```
+
+```{r fig-3, fig.cap = "Causal effect of factors on regime shift trajectory. (a) Standardised effect size of factors influencing regime shift trajectory. Parameter estimates are posterior median values (dot) with 90% and 50% percentile intervals (PI) shown with thin line and thick lines respectively. (b-h) Marginal plots of predictor variables (for continuous variables) affecting regime shift trajectory: Solid black lines represent the predicted median of all drawn posterior predictive sampling; grey shading represents the 95% Bayesian predictive intervals; and blue dots represent the point at which regime shifts and recovery are equally likely.", fig.height=10, fig.width=8}
+
+## Combine all the above plots into final figure
+# Define layout for plotting
+layout <- "AAA
+BCD
+EFG
+#H#"
+
+# Plot together
+(plot_causal_effects + plot_nutrient + plot_herb + plot_branching + plot_depth + plot_complexity + plot_wave + plot_macro) + 
+  plot_layout(design = layout, 
+              heights = c(2, 1, 1, 1)) + # so that 3a is larger
+  plot_annotation(tag_levels = list(c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)"))) # label plots
+
+```
+
+```{r predictive_model, include = FALSE}
+# Predictive model for predicting which of the 12 recovering reefs are expected to regime shift following the 2016 bleaching event 
+
+# Train model using ‘Seychelles’ dataset 
+
+set.seed(1) # for reproducibility
+# Quadratic approximate posterior distribution
+SeyPre <- map(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a  + bd*Depth + bn*Nutrients + bw*Wave + bic*Struccomplex  + bbc*Branching + bim*Macro,
+    a ~ dnorm(0,10),
+    bd ~ dnorm(0,10),
+    bn ~ dnorm(0,10),
+    bw ~ dnorm(0,10),
+    bic ~ dnorm(0,10),
+    bbc ~ dnorm(0,30),
+    bim ~ dnorm(0,10)
+  ), 
+  data = Seychelles)
+
+# Posterior Validation Check
+postcheck(SeyPre) # x axis is each of the regions, blue circle is the predicted shifted status and clear circle is the predicted value with predictive interval
+```
+
+```{r posterior_predictive_plots, include = FALSE}
+# Predict using 2014 observational dataset “Seychelles2014” 
+predict <- link(SeyPre, data = Seychelles2014) # Computes inverse-link linear model values
+str(predict)
+summary(predict)
+dim(predict)
+head(predict)
+
+# Rename columns to correct region 
+colnames(predict) <- Seychelles2014$Region
+
+# Extract means for naming
+predict_means <- apply(predict, 2, mean) %>% round(2)
+
+# Only want to predict for recovering reefs
+# so extract list of reefs recovering
+recovering <- Seychelles2014 %>% filter(Shifted == 0) %>% select(Region) %>% pull()
+
+# Rather than reading in and using the dataset “Predictions” which show the individual probabilities of regime shifting estimated for each recovering reef site, reformat the data we have
+plot_predictive_effects <- predict %>% data.frame() %>% 
+  pivot_longer(cols = everything(), # reformat for plotting
+               names_to = "Reef Site", 
+               values_to = "Probability of Regime Shift") %>% 
+  filter(`Reef Site` %in% recovering) %>% # filter for recovering reefs
+  mutate(`Reef Site` = paste0(`Reef Site`, " (", round(predict_means[`Reef Site`] * 100), 
+  "%)")) %>% # add mean posterior predictions
+  # Reformat names
+  mutate(`Reef Site` = gsub("_", " ", `Reef Site`),
+         `Reef Site` = gsub("atch", "", `Reef Site`),
+         `Reef Site` = gsub("ranite", "", `Reef Site`),
+         `Reef Site` = gsub("arbonate", "", `Reef Site`),
+         `Reef Site` = gsub("Ste", "St", `Reef Site`)) %>% 
+  ggplot(aes(x = `Probability of Regime Shift`, y = 	`Reef Site`)) + # plot
+  geom_density_ridges(aes(fill = `Reef Site`)) + 
+  scale_fill_manual(values = c("yellowgreen", "yellow", 	"orange", "red2", "deeppink", "purple", "lightsteelblue3", 	"darkblue", "slateblue4", "blue", "deepskyblue3", 	"cadetblue2")) +
+  labs(y = "") +
+  theme(legend.position = "none")
+  
+```
+
+```{r marginal_predictive_plots, eval = F}
+## NEED TO FIX THIS -CANT WORK OUT HOW TO PLOT THESE PLOTS
+# Define function for plotting
+plot_4b <- function(ggpred_obj, x_label) {
+  
+  i <- which(diff(ggpred_obj$predicted > 0.5) != 0)[1] # two predictions surrounding 0.5
+  x_50 <- approx(x = ggpred_obj$predicted[i:(i + 1)], y = ggpred_obj$x[i:(i + 1)], xout = 0.5)$y
+  
+  plot(ggpred_obj, show_data = TRUE, 
+       jitter = 0.0, dot_size = 1, line_size = 0.5, 
+       show_title = FALSE, show_y_title = FALSE) +
+    scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
+    labs(x = x_label) + 
+    theme(aspect.ratio = 1) + # 1:1 aspect ratio
+    annotate("point", x = x_50, y = 0.5, shape = 18, size = 4, colour = "steelblue") # add diamond with calculated value
+  
+}
 
 # Depth marginal plot 
 fit <- stan_glm(Shifted ~ Depth, data = Seychelles, family = binomial("logit"), chains = 1)
-depth_MP <- ggpredict(fit)
-plot_depth <- plot(depth_MP, show_data = TRUE, jitter = 0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Depth (m)") + 
-  theme(aspect.ratio = 1)
+depth_MP <- ggpredict(fit, terms = "Depth")
+plot_depth <- plot_3b(depth_MP, "Depth (m)")
+plot_depth
+
+fit <- stan_glm(Shifted ~ Depth, data = Seychelles2014, family = binomial("logit"), chains = 1)
+depth_MP <- ggpredict(fit, terms = "Depth")
+plot_depth <- plot_3b(depth_MP, "Depth (m)")
+plot_depth
+
+fit <- stan_glm(Shifted ~ Depth + Nutrients + Wave + Struccomplex + Branching + Macro, data = Seychelles2014, family = binomial("logit"), chains = 1)
+depth_MP <- ggpredict(fit, terms = "Depth")
+plot_depth <- plot_3b(depth_MP, "Depth (m)")
+plot_depth
+
+
 
 # Nutrient marginal plot 
 fit <- stan_glm(Shifted ~ Nutrients + Depth, data = Seychelles, family = binomial("logit"), chains = 1)
 nutrient_MP <- ggpredict(fit, terms = "Nutrients")
-plot_nutrient <- plot(nutrient_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Carbon : Nitrogen") + 
-  theme(aspect.ratio = 1)
+plot_nutrient <- plot_3b(nutrient_MP, "Carbon : Nitrogen")
+plot_nutrient
+
+fit <- stan_glm(Shifted ~ Nutrients + Depth, data = Seychelles2014, family = binomial("logit"), chains = 1)
+nutrient_MP <- ggpredict(fit, terms = "Nutrients")
+plot_nutrient <- plot_3b(nutrient_MP, "Carbon : Nitrogen")
+plot_nutrient
+
+# Definitely not this
+fit <- stan_glm(Shifted ~ Depth + Nutrients + Wave + Struccomplex + Branching + Macro, data = Seychelles2014, family = binomial("logit"), chains = 1)
+nutrient_MP <- ggpredict(fit, terms = "Nutrients")
+plot_nutrient <- plot_3b(nutrient_MP, "Carbon : Nitrogen")
+plot_nutrient
+
+
 
 # Branching coral marginal plot
-fit <- stan_glm(Shifted ~ Branching + Depth + Manage + Wave, data = Seychelles, family = binomial("logit"), chains = 1) # MPA is called Manage in this dataset (wrong in supplied code)
+fit <- stan_glm(Shifted ~ Branching + Depth + Manage + Wave, data = Seychelles2014, family = binomial("logit"), chains = 1) # MPA is called Manage in this dataset (wrong in supplied code)
 branching_MP <- ggpredict(fit, terms = "Branching")
-plot_branching <- plot(branching_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Branching Coral (% cover)") + 
-  theme(aspect.ratio = 1)
+plot_branching <- plot_3b(branching_MP, "Branching Coral (% cover)")
 
 # Structural complexity marginal plot 
-fit <- stan_glm(Shifted ~ Struccomplex + Branching, data = Seychelles, family = binomial("logit"),chains = 1)
+fit <- stan_glm(Shifted ~ Struccomplex + Branching, data = Seychelles2014, family = binomial("logit"),chains = 1)
 struccomplex_MP <- ggpredict(fit, terms = "Struccomplex") 
-plot_complexity <- plot(struccomplex_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Structural Complexity") + 
-  theme(aspect.ratio = 1)
+plot_complexity <- plot_3b(struccomplex_MP, "Structural Complexity")
 
 # Wave exposure marginal plot 
-fit <- stan_glm(Shifted ~ Wave, data = Seychelles, family = binomial("logit"), chains = 1)
-wave_MP <- ggpredict(fit)
-plot_wave <- plot(wave_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Wave Exposure") + 
-  theme(aspect.ratio = 1)
+fit <- stan_glm(Shifted ~ Wave, data = Seychelles2014, family = binomial("logit"), chains = 1)
+wave_MP <- ggpredict(fit, terms = "Wave")
+plot_wave <- plot_3b(wave_MP, "Wave Exposure")
+plot_wave
 
-# Herbivore biomass marginal plot 
-fit <- stan_glm(Shifted ~ Herb + Struccomplex + Branching, data = Seychelles, family = binomial("logit"), chains = 1)
-herb_MP <- ggpredict(fit, terms = "Herb")
-plot_herb <- plot(herb_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Herbivore Biomass (kg/ha)") + 
-  theme(aspect.ratio = 1)
+fit <- stan_glm(Shifted ~ Wave, data = Seychelles, family = binomial("logit"), chains = 1)
+wave_MP <- ggpredict(fit, terms = "Wave")
+plot_wave <- plot_3b(wave_MP, "Wave Exposure")
+plot_wave
+
+fit <- stan_glm(Shifted ~ Depth + Nutrients + Wave + Struccomplex + Branching + Macro, data = Seychelles2014, family = binomial("logit"), chains = 1)
+macro_MP <- ggpredict(fit, terms = "Macro") 
+plot_macro <- plot_3b(macro_MP, x_label = "Macroalgae (% cover)")
+
+
+# # Herbivore biomass marginal plot - not plotted
+# fit <- stan_glm(Shifted ~ Herb + Struccomplex + Branching, data = Seychelles2014, family = binomial("logit"), chains = 1)
+# herb_MP <- ggpredict(fit, terms = "Herb")
+# plot_herb <- plot_3b(herb_MP, "Herbivore Biomass (kg/ha)")
 
 # Initial macroalgae cover marginal plot 
-fit <- stan_glm(Shifted ~ Macro + Herb + Depth + Nutrients + Wave, data = Seychelles, family = binomial("logit"), chains = 1)
+fit <- stan_glm(Shifted ~ Macro + Herb + Depth + Nutrients + Wave, data = Seychelles2014, family = binomial("logit"), chains = 1)
 macro_MP <- ggpredict(fit, terms = "Macro") 
-plot_macro <- plot(macro_MP, show_data = TRUE, jitter = 0.0, dot_size = 1, line_size = 0.5, show_title = FALSE, show_y_title = FALSE) +
-  scale_y_continuous(breaks = c(0, 0.5, 1), labels = number_format(accuracy = 0.1)) +
-  labs(x = "Macroalgae (% cover)") + 
-  theme(aspect.ratio = 1)
+plot_macro <- plot_3b(macro_MP, x_label = "Macroalgae (% cover)")
 
-i <- which(diff(macro_MP$predicted > 0.5) != 0)[1]
-x_50 <- approx(x = macro_MP$predicted[i:(i + 1)], y = macro_MP$x[i:(i + 1)], xout = 0.5)$y
 
-plot_macro <- plot(macro_MP, show_data = TRUE, jitter = 0) +
-  geom_point(
-    aes(x = x_50, y = 0.5),
-    shape = 18,
-    size = 4,
-    colour = "steelblue"
-  )
+fit <- stan_glm(Shifted ~ Depth + Nutrients + Wave + Struccomplex + Branching + Macro, data = Seychelles2014, family = binomial("logit"), chains = 1)
+macro_MP <- ggpredict(fit, terms = "Macro") 
+plot_macro <- plot_3b(macro_MP, x_label = "Macroalgae (% cover)")
 
-library(patchwork)
-library(scales)
 
-(plot_nutrient + plot_herb + plot_branching) / (plot_depth + plot_complexity + plot_wave) + (plot_spacer() + plot_macro + plot_spacer()) + plot_annotation(tag_levels = list(c("(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)"))) 
+Depth + bn*Nutrients + bw*Wave + bic*,
+
+
 
 ```
 
+```{r fig-4, fig.cap = "", fig.height=10, fig.width=8, eval = F}
 
+## Combine all the above plots into final figure
+# Define layout for plotting
+layout <- "AAA
+BCD
+EFG"
+
+# Plot together
+(plot_predictive_effects + plot_nutrient + plot_branching + plot_depth + plot_complexity + plot_wave + plot_macro) + 
+  plot_layout(design = layout, 
+              heights = c(2, 1, 1)) +
+  plot_annotation(tag_levels = list(c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)"))) # label plots
+
+```
+
+```{r, eval = F}
+# Supplementary Materials Table 2: Causal salad and no-covariate models using ‘SeychellesS’ dataset 
+
+# Causal salad model 
+
+causal_salad <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bm*MPA + bn*Nutrients + bh*Herb + bb*Branching + bd*Depth + bs*Struccomplex + bw*Wave + bim*Macro,
+    a ~ cauchy(0,10) ,
+    bm ~ dstudent(4,0,2.5),
+    bn ~ dstudent(4,0,2.5),
+    bh ~ dstudent(4,0,2.5),
+    bb ~ dstudent(4,0,2.5),
+    bd ~ dstudent(4,0,2.5),
+    bs ~ dstudent(4,0,2.5),
+    bw ~ dstudent(4,0,2.5),
+    bim ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS) 
+
+# show median and 90% percentile interval (PI) for predictor variables   
+post <- extract.samples(causal_salad)
+post_MPA <- post$bm
+post_nutrients <- post$bn
+post_herb <- post$bh
+post_branching <- post$bb
+post_depth <- post$bd
+post_struccomplex <- post$bs
+post_wave <- post$bw
+post_macro <- post$bim
+
+median(post_MPA)
+median(post_nutrients)
+median(post_herb)
+median(post_branching)
+median(post_depth)
+median(post_struccomplex)
+median(post_wave)
+median(post_macro)
+
+PI(post_MPA, prob = 0.90)
+PI(post_nutrients, prob = 0.90)
+PI(post_herb, prob = 0.90)
+PI(post_branching, prob = 0.90)
+PI(post_depth, prob = 0.90)
+PI(post_struccomplex, prob = 0.90)
+PI(post_wave, prob = 0.90)
+PI(post_macro, prob = 0.90)
+
+# No-covariate models 
+
+# Nutrient 
+
+nutrient_nc <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bn*Nutrient,
+    a ~ cauchy(0,10) ,
+    bn ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS)
+
+# show median and 90% percentile interval (PI) for nutrient  
+post <- extract.samples(nutrient_nc)
+post_nutrient <- post$bn
+PI(post_nutrient, prob = 0.90)
+median(post_nutrient) 
+
+# Branching coral 
+
+Branching_nc <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bbc*Branching,
+    a ~ cauchy(0,10) ,
+    bbc ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS)
+
+# show median and 90% percentile interval (PI) for branching coral   
+post <- extract.samples(branching_nc)
+post_branching <- post$bbc
+PI(post_branching, prob = 0.90)
+median(post_branching) 
+
+# Structural complexity 
+
+Struccomplex_nc <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bsc*Struccomplex,
+    a ~ cauchy(0,10) ,
+    bsc ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS)
+
+# show median and 90% percentile interval (PI) for structural complexity 
+post <- extract.samples(struccomplex_nc)
+post_struccomplex <- post$bsc
+PI(post_struccomplex, prob = 0.90)
+median(post_struccomplex) 
+
+# Herbivore biomass 
+
+Herb_nc <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bh*Herb,
+    a ~ cauchy(0,10) ,
+    bh ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS)
+
+# show median and 90% percentile interval (PI) for herbivore biomass 
+post <- extract.samples(herb_nc)
+post_herb <- post$bh
+PI(post_herb, prob = 0.90)
+median(post_herb) 
+
+# Initial macroalgae cover 
+
+macro_nc <- map2stan(
+  alist(
+    Shifted ~ dbinom( 1 , p ) ,
+    logit(p) <- a + bm*Macro,
+    a ~ cauchy(0,10) ,
+    bm ~ dstudent(4,0,2.5)
+  ), 
+  data = SeychellesS)
+
+# show median and 90% percentile interval (PI) for macroalgae 
+post <- extract.samples(macro_nc)
+post_macro <- post$bm
+PI(post_macro, prob = 0.90)
+median(post_macro) 
+
+
+```
+
+\clearpage
+
+## References
 
