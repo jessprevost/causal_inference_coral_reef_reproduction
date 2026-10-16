@@ -2,3 +2,4 @@ I made use of ChatGPT for the following:
 - Identifying the function gsub() to use when changing Region names for figure 3a
 - Adding overlaid diamonds to figure 3(b-h). I adapted this code for figure 4(b-g)
 - Syntax for formatting figures 3 and 4 using patchwork and grid
+- Syntax for rendering the kable table
